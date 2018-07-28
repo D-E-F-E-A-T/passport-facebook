@@ -1,3 +1,5 @@
+var https = require('https')
+var pem = require('pem');
 const express = require('express');
 const passport = require('passport');
 const FacebookStrategy = require('passport-facebook').Strategy;
@@ -31,19 +33,27 @@ app.set('views', './views');
 app.use(passport.initialize());
 app.use(passport.session());
 
-app.get('/', (req, res) => {
-    res.render('home')
-});
 
-app.get('/login', (req, res) => {
-    res.render('logged')
+
+pem.createCertificate({ days: 1, selfSigned: true }, function (err, keys) {
+  if (err) {
+    throw err
+  }
+
+  app.get('/', (req, res) => {
+      res.render('home')
+  });
+
+  app.get('/login', (req, res) => {
+      res.render('logged')
+  })
+
+  app.get('/auth/facebook', passport.authenticate('facebook', { scope: 'read_stream' }));
+
+  app.get('auth/facebook/callback', passport.authenticate('facebook', {
+      successRedirect: '/',
+      failureRedirect: '/login'
+  }))
+
+  https.createServer({ key: keys.serviceKey, cert: keys.certificate }, app).listen(3000)
 })
-
-app.get('/auth/facebook', passport.authenticate('facebook', { scope: 'read_stream' }));
-
-app.get('auth/facebook/callback', passport.authenticate('facebook', {
-    successRedirect: '/',
-    failureRedirect: '/login'
-}))
-
-app.listen(3000);
